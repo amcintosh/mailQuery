@@ -1,1 +1,5 @@
-SELECT * FROM contact WHERE rownum < 10
+[ContactQuery]
+Query: SELECT * FROM contact WHERE date_created > :1 and date_created < :2
+Params: FIRSTOFLASTMONTH, FIRSTOFTHISMONTH
+Filename: example.txt
+
