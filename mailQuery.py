@@ -5,11 +5,11 @@ DB_USER="andrew"
 DB_PASSWORD="andrew"
 DB_TNS="dev10g"
 
-#import cx_Oracle
+import cx_Oracle
 import sys
-import datetime
 import smtplib
 import ConfigParser
+from datetime import date
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
@@ -35,25 +35,6 @@ def getConnection(user=DB_USER,password=DB_PASSWORD,tns=DB_TNS):
     return cx_Oracle.connect(connectStr)
 
 
-def getQueryDataFromFile(filepath):
-    '''Read config file and parse all queries and their associated config.
-    Returns a list of dictionaries, where each dictionary is a separate 
-    query to run containing the parameters for that query.
-    '''
-    Config = ConfigParser.ConfigParser()
-    Config.read(filepath)
-    queryData = []
-    for section in Config.sections():
-        thisQuery = {}
-        for name,value in Config.items(section):
-            if name!="params":
-                thisQuery[name] = value
-            else:
-                thisQuery[name] = constructParams(value)
-        queryData.append(thisQuery)
-    return queryData
-
-
 def constructParams(paramStr):
     '''Takes a string of parameters and constructs a list from them.
        Date placeholders are replaced with date objects. All other 
@@ -63,15 +44,19 @@ def constructParams(paramStr):
     newParams = []
     for param in params:
         if param.strip()=="FIRSTOFTHISMONTH":
-            pass
+            today = date.today()
+            newParams.append(date(today.year, today.month, 1))
         elif param.strip()=="FIRSTOFLASTMONTH":
-            pass
+            today = date.today()
+			#TODO Make this work for january
+            newParams.append(date(today.year, today.month-1, 1))
         else:
             newParams.append(param.strip())
     return newParams
 
 
 def writeCsv(cursor,outfilename):
+    '''Write data from a cursor to the specified file in csv format'''
     outfile = open(outfilename, 'w')
     outfile.write('"')
     for row in cursor:
@@ -79,8 +64,28 @@ def writeCsv(cursor,outfilename):
     outfile.write('"')
     outfile.close()
 
-
-def mailCsv(outfilename):
+	
+def writeQueriesToCSV(connection, fileConfig):
+    '''Iterates over and executes queries specified in config file.
+    Each query result set is writen to a csv file with the file name 
+    again specified in the config file.
+    '''
+    outFileNames = []
+    for section in fileConfig.sections():
+        if section=="MailConfig": 
+            continue
+        cursor = connection.cursor()
+        cursor.arraysize = 256
+        params = constructParams(fileConfig.get(section,"Params"))
+        cursor.execute(fileConfig.get(section,"Query"),params)
+        outFileName = fileConfig.get(section,"Filename")
+        writeCsv(cursor,outFileName)
+		outFileNames.append(outFileName)
+        cursor.close()
+    return outFileNames
+	
+		
+def mailCsv(mailConfig, filesToMail):
     fp = open(outfilename, 'rb')
     msg = MIMEMultipart()
     msg['From'] = "amcintosh"
@@ -95,28 +100,25 @@ def mailCsv(outfilename):
     smtp = smtplib.SMTP("server",25)
     smtp.sendmail("amcintosh@isomething.com", "amcintosh@something.com", msg.as_string())
     smtp.close()
-
     
+	
 def main(argv):
     if len(argv)<2 or argv[1]=="usage":
         usage()
         sys.exit(2)
 
-    query = getQueryDataFromFile(argv[1])
-    print query
+    fileConfig = ConfigParser.ConfigParser()
+    fileConfig.read(argv[1])
+
     if len(argv)>5:
         con = getConnection(argv[2],argv[3],argv[4])
     else:
         con = getConnection()
-    cursor = con.cursor()
-    cursor.arraysize = 256
-    cursor.execute(query)
-    outfilename = "output.txt"
-    writeCsv(cursor,outfilename)
-    mailCsv(outfilename)
-    
-    cursor.close()
+    filesToMail = writeQueriesToCSV(con, fileConfig)
     con.close()
+
+    mailCsv(fileConfig.items("MailConfig"),filesToMail)
+    
 
 if __name__ == "__main__":
     main(sys.argv)

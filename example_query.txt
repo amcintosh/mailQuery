@@ -1,5 +1,19 @@
+[MailConfig]
+mailServer: exchange.some.where
+mailPort: 25
+mailFrom: amcintosh@some.where
+mailTo: amcintosh@some.where
+mailSubject: A Report!
+mailBody: This is my test
+attachmentCleanup: true
+
 [ContactQuery]
-Query: SELECT * FROM contact WHERE date_created > :1 and date_created < :2
+Query: SELECT * FROM contact WHERE created_date > :1 and created_date < :2
 Params: FIRSTOFLASTMONTH, FIRSTOFTHISMONTH
 Filename: example.txt
+
+[Contact2Query]
+Query: SELECT contact_id FROM contact WHERE created_date > :1 and created_date < :2
+Params: FIRSTOFLASTMONTH, FIRSTOFTHISMONTH
+Filename: example2.txt
 
