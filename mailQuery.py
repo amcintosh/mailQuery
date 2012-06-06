@@ -1,11 +1,7 @@
 #!/usr/bin/python
 
-#Default connection params
-DB_USER="andrew"
-DB_PASSWORD="andrew"
-DB_TNS="dev10g"
-
 import cx_Oracle
+import os
 import sys
 import smtplib
 import ConfigParser
@@ -16,7 +12,6 @@ from email.MIMEText import MIMEText
 from email.Utils import COMMASPACE, formatdate
 from email import Encoders
 
-
 __version__ = "0.1"
 __date__ = "2012/05/01"
 __updated__ = "2012/05/01"
@@ -26,12 +21,19 @@ __license__ = "GPL"
 
 
 def usage():
-    print "Usage: mailQuery <query_file> Optional: <user> <password> <tns_name> "
+    print "Usage: mailQuery <query_file>"
 
 
-def getConnection(user=DB_USER,password=DB_PASSWORD,tns=DB_TNS):
+def getConnection(dbConfig):
     '''Connect to Oracle database'''
-    connectStr = user+"/"+password+"@"+tns
+    connectStr = ""
+    try:
+        connectStr = dbConfig.get("DBConfig","dbUser") \
+                +"/"+dbConfig.get("DBConfig","dbPassword") \
+                +"@"+dbConfig.get("DBConfig","dbTNS")
+    except ConfigParser.NoOptionError as err:
+        print "Required database configuration options missing from configuration file:",err
+        sys.exit(2)
     return cx_Oracle.connect(connectStr)
 
 
@@ -58,10 +60,15 @@ def constructParams(paramStr):
 def writeCsv(cursor,outfilename):
     '''Write data from a cursor to the specified file in csv format'''
     outfile = open(outfilename, 'w')
-    outfile.write('"')
+    colNames = []
+    for i in range(0, len(cursor.description)):
+        colNames.append(cursor.description[i][0])
+    outfile.write(",".join(colNames)+"\n")
+    
     for row in cursor:
+        outfile.write('"')
         outfile.write('","'.join(map(str,row)))
-    outfile.write('"')
+        outfile.write('"\n')
     outfile.close()
 
 	
@@ -72,53 +79,68 @@ def writeQueriesToCSV(connection, fileConfig):
     '''
     outFileNames = []
     for section in fileConfig.sections():
-        if section=="MailConfig": 
+        if section=="MailConfig" or section=="DBConfig": 
             continue
         cursor = connection.cursor()
         cursor.arraysize = 256
-        params = constructParams(fileConfig.get(section,"Params"))
-        cursor.execute(fileConfig.get(section,"Query"),params)
-        outFileName = fileConfig.get(section,"Filename")
-        writeCsv(cursor,outFileName)
-		outFileNames.append(outFileName)
+        try:
+            params = constructParams(fileConfig.get(section,"Params"))
+            cursor.execute(fileConfig.get(section,"Query"),params)
+
+            outFileName = fileConfig.get(section,"Filename")
+            writeCsv(cursor,outFileName)
+            outFileNames.append(outFileName)
+        except ConfigParser.NoOptionError as err:
+            print "Query configuration options missing from config file:", err
+            sys.exit(2)
         cursor.close()
     return outFileNames
 	
 		
 def mailCsv(mailConfig, filesToMail):
-    fp = open(outfilename, 'rb')
+    fromEmail = mailConfig.get("MailConfig","mailFrom")
+    toEmail = mailConfig.get("MailConfig","mailTo")
     msg = MIMEMultipart()
-    msg['From'] = "amcintosh"
-    msg['To'] = "amcintosh@something.com" #COMMASPACE.join(send_to)
-    msg['Subject'] = "test"
-    text = "This is my test"
+    msg['From'] = fromEmail
+    msg['To'] = toEmail
+    msg['Subject'] = mailConfig.get("MailConfig","mailSubject")
+    text = mailConfig.get("MailConfig","mailBody")
     msg.attach( MIMEText(text) )
-    part = MIMEBase('application', "octet-stream")
-    part.set_payload(fp.read())
-    part.add_header('Content-Disposition', 'attachment', filename=outfilename)
-    msg.attach(part)
-    smtp = smtplib.SMTP("server",25)
-    smtp.sendmail("amcintosh@isomething.com", "amcintosh@something.com", msg.as_string())
+    for file in filesToMail:
+        fp = open(file, 'rb')
+        part = MIMEBase('application', "octet-stream")
+        part.set_payload(fp.read())
+        part.add_header('Content-Disposition', 'attachment', filename=file)
+        msg.attach(part)
+    smtp = smtplib.SMTP(mailConfig.get("MailConfig","mailServer"),mailConfig.get("MailConfig","mailPort"))
+    smtp.sendmail(fromEmail, toEmail, msg.as_string())
     smtp.close()
-    
+
+
+def cleanUpFiles(filesToRemove):
+    for file in filesToRemove:
+        os.remove(file)
+	
 	
 def main(argv):
     if len(argv)<2 or argv[1]=="usage":
         usage()
         sys.exit(2)
-
+    
     fileConfig = ConfigParser.ConfigParser()
     fileConfig.read(argv[1])
-
-    if len(argv)>5:
-        con = getConnection(argv[2],argv[3],argv[4])
-    else:
-        con = getConnection()
+    
+    con = getConnection(fileConfig)
     filesToMail = writeQueriesToCSV(con, fileConfig)
+    #mailCsv(fileConfig,filesToMail)
+    try:
+        if fileConfig.get("MailConfig","attachmentCleanup")=="true":
+		    cleanUpFiles(filesToMail)
+    except ConfigParser.NoOptionError:
+	    #Do nothing. attachmentCleanup not required
+		pass
     con.close()
 
-    mailCsv(fileConfig.items("MailConfig"),filesToMail)
-    
 
 if __name__ == "__main__":
     main(sys.argv)
