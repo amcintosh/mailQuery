@@ -132,13 +132,13 @@ def main(argv):
     
     con = getConnection(fileConfig)
     filesToMail = writeQueriesToCSV(con, fileConfig)
-    #mailCsv(fileConfig,filesToMail)
+    mailCsv(fileConfig,filesToMail)
     try:
         if fileConfig.get("MailConfig","attachmentCleanup")=="true":
-		    cleanUpFiles(filesToMail)
+            cleanUpFiles(filesToMail)
     except ConfigParser.NoOptionError:
-	    #Do nothing. attachmentCleanup not required
-		pass
+        #Do nothing. attachmentCleanup not required
+        pass
     con.close()
 
 
