@@ -134,7 +134,7 @@ def main(argv):
     
     con = get_connection(file_config)
     files_to_mail = write_queries_to_csv(con, file_config)
-    mail_csv(file_config,files_to_mail)
+    mail_csv(file_config, files_to_mail)
     try:
         if file_config.get("MailConfig","attachmentCleanup")=="true":
             clean_up_files(files_to_mail)
