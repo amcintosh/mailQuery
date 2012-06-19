@@ -1,7 +1,14 @@
 [DBConfig]
 dbUser=andrew
 dbPassword=andrew
-dbTNS=dev10g
+
+#May specify TNS name or specific host connections
+#dbTNS=dev10g
+
+#Comment out these if TNS used
+dbHost=tordevora02.testdev.otn
+dbPort=1521
+dbService=dev10g
 
 [MailConfig]
 mailServer: server.somewhere

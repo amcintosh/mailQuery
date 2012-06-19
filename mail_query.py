@@ -27,9 +27,17 @@ def get_connection(db_config):
     '''Connect to Oracle database'''
     connect_str = ""
     try:
-        connect_str = (db_config.get("DBConfig","dbUser") +
-                      "/"+db_config.get("DBConfig","dbPassword") +
-                      "@"+db_config.get("DBConfig","dbTNS"))
+        if "dbTNS" in db_config.items("DBConfig"):
+            connect_str = (db_config.get("DBConfig","dbUser") +
+                          "/"+db_config.get("DBConfig","dbPassword") +
+                          "@"+db_config.get("DBConfig","dbTNS"))
+        else:
+            connect_str = (db_config.get("DBConfig","dbUser") +
+                          "/"+db_config.get("DBConfig","dbPassword") +
+                          "@"+db_config.get("DBConfig","dbHost") +
+                          ":"+db_config.get("DBConfig","dbPort") +
+                          "/"+db_config.get("DBConfig","dbService")) 
+            print connect_str
     except ConfigParser.NoOptionError as err:
         print ("Required database configuration options missing "
                "from configuration file:"), err
