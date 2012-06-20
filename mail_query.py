@@ -20,11 +20,15 @@ __license__ = "GPL"
 
 
 def usage():
+    '''Print usage if no config file provided.'''
     print "Usage: mailQuery <query_file>"
 
 
 def get_connection(db_config):
-    '''Connect to Oracle database'''
+    '''Connect to Oracle database.
+       Connection string can either use TNS or full server/service 
+       path as specified in the config file.
+    '''
     connect_str = ""
     try:
         if "dbTNS" in db_config.items("DBConfig"):
@@ -58,8 +62,10 @@ def construct_params(param_str):
             new_params.append(date(today.year, today.month, 1))
         elif param.strip()=="FIRSTOFLASTMONTH":
             today = date.today()
-			#TODO Make this work for january
-            new_params.append(date(today.year, today.month-1, 1))
+            new_params.append(date(today.year, max(1, today.month-1), 1))
+        elif param.strip()=="FIRSTOFNEXTMONTH":
+            today = date.today()
+            new_params.append(date(today.year, min(12, today.month+1), 1))
         else:
             new_params.append(param.strip())
     return new_params
@@ -106,6 +112,10 @@ def write_queries_to_csv(connection, file_config):
 	
 		
 def mail_csv(mail_config, files_to_mail):
+    '''Sends email with specified files as attachments.
+       Mail server, from, to, subject, etc. should all
+       be defined in the configuration file.
+    '''
     from_email = mail_config.get("MailConfig","mailFrom")
     to_email = mail_config.get("MailConfig","mailTo")
     msg = MIMEMultipart()
@@ -128,6 +138,7 @@ def mail_csv(mail_config, files_to_mail):
 
 
 def clean_up_files(files_to_remove):
+    '''Deletes the specified files for the local directory.'''
     for file_to_remove in files_to_remove:
         os.remove(file_to_remove)
 	
