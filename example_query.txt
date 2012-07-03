@@ -3,20 +3,20 @@ dbUser=andrew
 dbPassword=andrew
 
 #May specify TNS name or specific host connections
-#dbTNS=dev10g
+#dbTNS=dev11g
 
 #Comment out these if TNS used
-dbHost=tordevora02.testdev.otn
+dbHost=oracle_server.domain.com
 dbPort=1521
-dbService=dev10g
+dbService=dev11g
 
 [MailConfig]
-mailServer: server.somewhere
+mailServer: mail_server.domain.com
 mailPort: 25
-mailFrom: amcintosh@somewhere
-mailTo: amcintosh@somewhere
+mailFrom: amcintosh@domain.com
+mailTo: amcintosh@domain.com, someOneElse@somewhere.com
 mailSubject: A Report!
-mailBody: This is my test
+mailBody: This is my example.<br>You can see most of the options here.
 attachmentCleanup: true
 
 [ContactQuery]

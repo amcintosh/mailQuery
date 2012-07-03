@@ -13,7 +13,7 @@ from email.MIMEText import MIMEText
 
 __version__ = "0.1"
 __date__ = "2012/05/01"
-__updated__ = "2012/05/01"
+__updated__ = "2012/07/03"
 __author__ = "Andrew McIntosh (github.com/amcintosh)"
 __copyright__ = "Copyright 2012, Andrew McIntosh"
 __license__ = "GPL"
@@ -122,7 +122,7 @@ def mail_csv(mail_config, files_to_mail):
     msg['To'] = to_email
     msg['Subject'] = mail_config.get("MailConfig","mailSubject")
     text = mail_config.get("MailConfig","mailBody")
-    msg.attach( MIMEText(text) )
+    msg.attach( MIMEText(text,'html') )
     for file_to_mail in files_to_mail:
         file_payload = open(file_to_mail, 'rb')
         part = MIMEBase('application', "octet-stream")
@@ -132,7 +132,7 @@ def mail_csv(mail_config, files_to_mail):
         msg.attach(part)
     smtp = smtplib.SMTP(mail_config.get("MailConfig","mailServer"), 
                         mail_config.get("MailConfig","mailPort"))
-    smtp.sendmail(from_email, to_email, msg.as_string())
+    smtp.sendmail(from_email, to_email.split(", "), msg.as_string())
     smtp.close()
 
 
