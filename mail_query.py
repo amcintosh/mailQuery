@@ -40,8 +40,7 @@ def get_connection(db_config):
                           "/"+db_config.get("DBConfig","dbPassword") +
                           "@"+db_config.get("DBConfig","dbHost") +
                           ":"+db_config.get("DBConfig","dbPort") +
-                          "/"+db_config.get("DBConfig","dbService")) 
-            print connect_str
+                          "/"+db_config.get("DBConfig","dbService"))
     except ConfigParser.NoOptionError as err:
         print ("Required database configuration options missing "
                "from configuration file:"), err
