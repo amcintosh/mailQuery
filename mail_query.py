@@ -31,7 +31,7 @@ def get_connection(db_config):
     '''
     connect_str = ""
     try:
-        if "dbTNS" in db_config.items("DBConfig"):
+        if db_config.has_option("DBConfig","dbTNS"):
             connect_str = (db_config.get("DBConfig","dbUser") +
                           "/"+db_config.get("DBConfig","dbPassword") +
                           "@"+db_config.get("DBConfig","dbTNS"))
