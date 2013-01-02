@@ -5,7 +5,7 @@ import os
 import sys
 import smtplib
 import ConfigParser
-from datetime import date
+from datetime import date, timedelta
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
@@ -13,7 +13,7 @@ from email.MIMEText import MIMEText
 
 __version__ = "0.1"
 __date__ = "2012/05/01"
-__updated__ = "2012/07/03"
+__updated__ = "2013/02/01"
 __author__ = "Andrew McIntosh (github.com/amcintosh)"
 __copyright__ = "Copyright 2012, Andrew McIntosh"
 __license__ = "GPL"
@@ -57,14 +57,14 @@ def construct_params(param_str):
     new_params = []
     for param in params:
         if param.strip()=="FIRSTOFTHISMONTH":
-            today = date.today()
-            new_params.append(date(today.year, today.month, 1))
+            first = date.today().replace(day=1)
+            new_params.append(first)
         elif param.strip()=="FIRSTOFLASTMONTH":
-            today = date.today()
-            new_params.append(date(today.year, max(1, today.month-1), 1))
+            last_month = (date.today().replace(day=1) - timedelta(days=1)).replace(day=1)
+            new_params.append(last_month)
         elif param.strip()=="FIRSTOFNEXTMONTH":
-            today = date.today()
-            new_params.append(date(today.year, min(12, today.month+1), 1))
+            next_month = (date.today().replace(day=1) + timedelta(days=32)).replace(day=1)
+            new_params.append(next_month)
         else:
             new_params.append(param.strip())
     return new_params
